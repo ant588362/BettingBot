@@ -27,6 +27,16 @@ def _url() -> str:
     return os.getenv("WHOP_APP_URL", "")
 
 
+def _confidence_str(n: int) -> str:
+    if n >= 5:
+        return "very high"
+    if n >= 4:
+        return "high"
+    if n >= 3:
+        return "medium"
+    return "low"
+
+
 def post_pick(pick: dict) -> str | None:
     """
     POST a single pick to the Whop app.
@@ -36,7 +46,7 @@ def post_pick(pick: dict) -> str | None:
         "sport": pick.get("sport", ""),
         "matchup": pick.get("teams", ""),   # Claude uses "teams", Whop calls it "matchup"
         "pick": pick.get("pick", ""),
-        "confidence": pick.get("confidence", 3),
+        "confidence": _confidence_str(int(pick.get("confidence", 3))),
         "analysis": pick.get("analysis", ""),
         "odds": str(pick.get("odds", "")),
         "units": pick.get("units", 1),
