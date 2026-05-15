@@ -6,7 +6,10 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 HISTORY_FILE = Path("picks_history.csv")
-FIELDNAMES = ["date", "sport", "teams", "pick", "odds", "confidence", "units", "pick_type", "result", "profit_loss"]
+FIELDNAMES = [
+    "date", "sport", "teams", "pick", "odds", "confidence",
+    "units", "pick_type", "whop_id", "result", "profit_loss",
+]
 
 
 def _ensure_csv():
@@ -31,23 +34,56 @@ def log_picks(picks: list[dict], date: str | None = None) -> None:
                 "confidence": p.get("confidence", ""),
                 "units": p.get("units", ""),
                 "pick_type": p.get("pick_type", "top"),
+                "whop_id": p.get("whop_id", ""),
                 "result": "",
                 "profit_loss": "",
             })
 
 
+def update_pick_result(whop_id: str, result: str) -> bool:
+    """
+    Find the row with matching whop_id and fill in result + profit_loss.
+    Returns True if a row was updated.
+    """
+    _ensure_csv()
+    rows = []
+    updated = False
+
+    with open(HISTORY_FILE, "r", newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+
+    for row in rows:
+        if row.get("whop_id") == whop_id and row.get("result") == "":
+            row["result"] = result.upper()[0]  # W / L / P
+            try:
+                units = float(row.get("units") or 1)
+                odds_str = row.get("odds", "")
+                row["profit_loss"] = f"{_calc_pl(odds_str, units, result):.2f}"
+            except Exception:
+                pass
+            updated = True
+            break
+
+    if updated:
+        with open(HISTORY_FILE, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    return updated
+
+
 def _calc_pl(odds_str: str, units: float, result: str) -> float:
-    result = result.upper()
-    if result == "P":
+    result = result.lower()
+    if result == "push":
         return 0.0
-    if result == "L":
+    if result == "loss":
         return -units
-    # Win
     try:
         o = int(odds_str)
         return units * (o / 100) if o > 0 else units * (100 / abs(o))
     except (ValueError, ZeroDivisionError):
-        return units  # fallback: assume even money
+        return units
 
 
 def _aggregate_rows(rows: list[dict]) -> dict:
@@ -61,7 +97,7 @@ def _aggregate_rows(rows: list[dict]) -> dict:
             units = 1.0
         if result == "W":
             wins += 1
-            unit_pl += _calc_pl(row.get("odds", ""), units, "W")
+            unit_pl += _calc_pl(row.get("odds", ""), units, "win")
         elif result == "L":
             losses += 1
             unit_pl -= units
@@ -75,11 +111,8 @@ def _aggregate_rows(rows: list[dict]) -> dict:
 def get_yesterday_record() -> dict:
     _ensure_csv()
     yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
-    rows = []
     with open(HISTORY_FILE, "r", newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            if row.get("date") == yesterday:
-                rows.append(row)
+        rows = [r for r in csv.DictReader(f) if r.get("date") == yesterday]
     stats = _aggregate_rows(rows)
     stats["date"] = yesterday
     return stats
@@ -88,17 +121,13 @@ def get_yesterday_record() -> dict:
 def get_weekly_stats() -> dict:
     _ensure_csv()
     cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
-    rows = []
     with open(HISTORY_FILE, "r", newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            if row.get("date", "") >= cutoff:
-                rows.append(row)
+        rows = [r for r in csv.DictReader(f) if r.get("date", "") >= cutoff]
     return _aggregate_rows(rows)
 
 
 def get_all_stats() -> dict:
     _ensure_csv()
-    rows = []
     with open(HISTORY_FILE, "r", newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     return _aggregate_rows(rows)

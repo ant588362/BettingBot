@@ -16,8 +16,9 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
 from claude_client import analyze_matchup, analyze_parlay, format_odds_for_prompt
-from history import get_all_stats, get_weekly_stats
+from history import get_all_stats, get_weekly_stats, update_pick_result
 from odds_client import OddsClient
+from whop_client import grade_pick as whop_grade_pick
 from picks_generator import generate_picks_data, post_and_log
 
 logger = logging.getLogger(__name__)
@@ -101,6 +102,11 @@ class AnalyzeRequest(BaseModel):
 class ParlayRequest(BaseModel):
     picks: str
     member_id: str = "anonymous"
+
+
+class GradeRequest(BaseModel):
+    whop_id: str
+    result: str  # "win", "loss", or "push"
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -227,6 +233,25 @@ async def odds(team: str = ""):
     except Exception:
         logger.exception("Error in /odds")
         raise HTTPException(status_code=503, detail="Odds temporarily unavailable.")
+
+
+@router.post("/picks/grade", dependencies=[Depends(_require_secret)])
+async def grade_pick(req: GradeRequest):
+    """
+    Grade a pick result. Updates both the Whop app dashboard and the local CSV.
+    Call this the next day once you know if the pick won or lost.
+    result: "win" | "loss" | "push"
+    """
+    if req.result.lower() not in ("win", "loss", "push"):
+        raise HTTPException(status_code=400, detail="result must be 'win', 'loss', or 'push'")
+
+    whop_ok = await asyncio.to_thread(whop_grade_pick, req.whop_id, req.result)
+    csv_ok = await asyncio.to_thread(update_pick_result, req.whop_id, req.result)
+
+    if not whop_ok:
+        raise HTTPException(status_code=503, detail="Failed to update Whop — check whop_id and try again.")
+
+    return {"status": "ok", "whop_id": req.whop_id, "result": req.result, "csv_updated": csv_ok}
 
 
 @router.get("/record", dependencies=[Depends(_require_secret)])
