@@ -11,7 +11,7 @@ _ANALYST_SYSTEM = (
     "You are an expert sports betting analyst with deep knowledge across NBA, NHL, MLB, NFL, "
     "UFC/MMA, NCAAB, and NCAAF. You analyze odds, line movement, matchup trends, and situational "
     "factors to identify high-value betting opportunities. You are sharp, data-driven, and concise. "
-    "You prioritize expected value over gut feeling. Return valid JSON when instructed."
+    "You prioritize expected value over gut feeling."
 )
 
 
@@ -142,7 +142,8 @@ def analyze_matchup(client: anthropic.Anthropic, query: str, odds_context: str) 
     prompt = (
         f"A member asks: {query}\n\n"
         f"Today's relevant odds:\n{odds_context}\n\n"
-        "Provide a sharp 3-5 sentence analysis including odds, key factors, and your take. Be direct."
+        "Respond in plain conversational text only — no JSON, no markdown, no code blocks, no bullet lists. "
+        "Write 3-5 sharp sentences covering the key factors, the line, and your take. Be direct and confident."
     )
     try:
         msg = client.messages.create(
