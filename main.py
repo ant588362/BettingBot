@@ -91,6 +91,14 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def serve_frontend():
     return FileResponse("static/index.html")
 
+@app.get("/privacy")
+async def serve_privacy():
+    return FileResponse("static/privacy.html")
+
+@app.get("/terms")
+async def serve_terms():
+    return FileResponse("static/terms.html")
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, log_level="info")

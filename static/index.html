@@ -204,6 +204,16 @@
   .divider{display:flex;align-items:center;gap:10px;margin:14px 0 12px}
   .divider span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);white-space:nowrap}
   .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+  /* ─── FOOTER ─────────────────────────────────────────────────────────────── */
+  .footer{
+    flex-shrink:0;padding:10px 16px;border-top:1px solid var(--border);
+    background:var(--s1);text-align:center;
+  }
+  .footer-disc{font-size:10px;color:var(--text3);line-height:1.5;margin-bottom:6px}
+  .footer-links{display:flex;justify-content:center;gap:14px}
+  .footer-links a{font-size:10px;color:var(--text3);text-decoration:none;font-weight:600}
+  .footer-links a:hover{color:var(--amber)}
 </style>
 </head>
 <body>
@@ -289,6 +299,16 @@
     </div>
 
   </div>
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-disc">For entertainment purposes only. Not financial advice. Past performance does not guarantee future results. Must be 18+ to use. Please gamble responsibly.</div>
+    <div class="footer-links">
+      <a href="/terms" target="_blank">Terms of Service</a>
+      <a href="/privacy" target="_blank">Privacy Policy</a>
+      <a href="https://www.ncpgambling.org" target="_blank">Problem Gambling Help</a>
+    </div>
+  </div>
+
 </div>
 
 <script>
