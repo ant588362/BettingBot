@@ -116,7 +116,7 @@ async def health():
     return {"status": "ok", "ts": datetime.now(timezone.utc).isoformat()}
 
 
-@router.get("/picks/today", dependencies=[Depends(_require_secret)])
+@router.get("/picks/today")
 async def get_todays_picks():
     """Return the latest generated picks. Returns 404 if none generated yet today."""
     if not _latest_picks:
@@ -173,7 +173,7 @@ async def generate_picks_now():
             raise HTTPException(status_code=500, detail="Picks generation failed. Try again.")
 
 
-@router.post("/analyze", dependencies=[Depends(_require_secret)])
+@router.post("/analyze")
 async def analyze(req: AnalyzeRequest):
     """AI analysis on any team, matchup, or question."""
     _check_rate(req.member_id)
@@ -205,7 +205,7 @@ async def parlay(req: ParlayRequest):
         raise HTTPException(status_code=503, detail="Parlay analysis temporarily unavailable.")
 
 
-@router.get("/odds", dependencies=[Depends(_require_secret)])
+@router.get("/odds")
 async def odds(team: str = ""):
     """
     Return current odds. Pass ?team=lakers to filter by team name.
@@ -254,7 +254,7 @@ async def grade_pick(req: GradeRequest):
     return {"status": "ok", "whop_id": req.whop_id, "result": req.result, "csv_updated": csv_ok}
 
 
-@router.get("/record", dependencies=[Depends(_require_secret)])
+@router.get("/record")
 async def record():
     """Return all-time and 7-day W/L record + ROI."""
     try:
